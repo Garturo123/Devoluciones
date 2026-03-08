@@ -44,7 +44,7 @@ public class Interface extends JFrame {
                 
             });
         });
-        new Consulta(panelPrincipal).setVisible(true);
+        
         nav.add(btnConsulta);
         nav.add(btnCrear);
         panelPrincipal.add(nav, BorderLayout.NORTH);

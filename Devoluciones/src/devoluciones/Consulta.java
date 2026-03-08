@@ -7,30 +7,50 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import javax.swing.table.DefaultTableModel;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 public class Consulta extends JPanel {
 
     private JTable tabla;
-    private JButton btnAbrir;
-
+    File archivo = new File("devoluciones.xlsx");
+    JTextField txtProveedor = new JTextField(15);
     public Consulta(JPanel panel) {
         setLayout(new BorderLayout());
-
         tabla = new JTable();
-        btnAbrir = new JButton("Abrir Excel");
+        cargarExcelEnTabla();
+        
+        JButton btnBuscar = new JButton("Buscar");
+        JButton btnDevolver = new JButton("Devolver producto");
 
-        btnAbrir.addActionListener(e -> abrirExcel());
+        JPanel superior = new JPanel();
+        superior.add(new JLabel("Proveedor:"));
+        superior.add(txtProveedor);
+        superior.add(btnBuscar);
+        superior.add(btnDevolver);
 
+        panel.add(superior, BorderLayout.NORTH);
         JScrollPane scroll = new JScrollPane(tabla);
-
         panel.add(scroll, BorderLayout.CENTER);
-        panel.add(btnAbrir, BorderLayout.SOUTH);
+
+        btnBuscar.addActionListener(e -> {
+            buscarProveedor(txtProveedor.getText());
+        });
+        btnDevolver.addActionListener(e -> devolverProductos());
+         txtProveedor.getDocument().addDocumentListener(new DocumentListener() {
+
+            public void insertUpdate(DocumentEvent e) { buscarProveedor(txtProveedor.getText()); }
+            public void removeUpdate(DocumentEvent e) { buscarProveedor(txtProveedor.getText()); }
+            public void changedUpdate(DocumentEvent e) { buscarProveedor(txtProveedor.getText()); }
+
+        });
     }
 
-    public void cargarExcelEnTabla(String rutaExcel) {
-
+    public void cargarExcelEnTabla() {
+        
         try {
-            Workbook workbook = new XSSFWorkbook(new FileInputStream(rutaExcel));
+            Workbook workbook = new XSSFWorkbook(new FileInputStream(archivo));
             Sheet sheet = workbook.getSheetAt(0);
             DataFormatter formatter = new DataFormatter();
 
@@ -52,6 +72,49 @@ public class Consulta extends JPanel {
                 }
                 model.addRow(fila);
             }
+            tabla.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+            tabla.setModel(model);
+            workbook.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+   public void buscarProveedor(String proveedor) {
+
+        try {
+            Workbook workbook = new XSSFWorkbook(new FileInputStream(archivo));
+            Sheet sheet = workbook.getSheetAt(0);
+            DataFormatter formatter = new DataFormatter();
+
+            DefaultTableModel model = new DefaultTableModel();
+
+            Row header = sheet.getRow(0);
+
+            for (Cell cell : header) {
+                model.addColumn(formatter.formatCellValue(cell));
+            }
+
+            proveedor = proveedor.toLowerCase().trim();
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+
+                String proveedorExcel = formatter.formatCellValue(row.getCell(1)).toLowerCase();
+
+                if (proveedorExcel.contains(proveedor)) {
+
+                    Object[] fila = new Object[header.getLastCellNum()];
+
+                    for (int j = 0; j < fila.length; j++) {
+                        fila[j] = formatter.formatCellValue(row.getCell(j));
+                    }
+
+                    model.addRow(fila);
+                }
+            }
 
             tabla.setModel(model);
             workbook.close();
@@ -60,18 +123,46 @@ public class Consulta extends JPanel {
             e.printStackTrace();
         }
     }
+   public void devolverProductos() {
 
-    private void abrirExcel() {
+    int[] filas = tabla.getSelectedRows();
 
-        JFileChooser chooser = new JFileChooser();
-        chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
-                "Archivos Excel (*.xlsx)", "xlsx"));
-
-        int resultado = chooser.showOpenDialog(this);
-
-        if (resultado == JFileChooser.APPROVE_OPTION) {
-            File archivo = chooser.getSelectedFile();
-            cargarExcelEnTabla(archivo.getAbsolutePath());
-        }
+    if (filas.length == 0) {
+        JOptionPane.showMessageDialog(this, "Seleccione productos");
+        return;
     }
+
+    try {
+
+        FileInputStream fis = new FileInputStream(archivo);
+        Workbook workbook = new XSSFWorkbook(fis);
+        Sheet sheet = workbook.getSheetAt(0);
+
+        for (int i = filas.length - 1; i >= 0; i--) {
+
+            int filaExcel = filas[i] + 1;
+
+            Row row = sheet.getRow(filaExcel);
+            sheet.removeRow(row);
+
+            sheet.shiftRows(filaExcel + 1, sheet.getLastRowNum(), -1);
+        }
+
+        fis.close();
+
+        FileOutputStream fos = new FileOutputStream(archivo);
+        workbook.write(fos);
+
+        fos.close();
+        workbook.close();
+
+        JOptionPane.showMessageDialog(this, "Productos devueltos");
+
+        cargarExcelEnTabla();
+
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+  
 }
