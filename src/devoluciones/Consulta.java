@@ -163,7 +163,7 @@ public void buscarProveedor(String proveedor) {
             Row row = sheet.getRow(i);
             if (row == null) continue;
 
-            String proveedorExcel = formatter.formatCellValue(row.getCell(2)).toLowerCase();
+            String proveedorExcel = formatter.formatCellValue(row.getCell(1)).toLowerCase();
 
             if (proveedorExcel.contains(proveedor)) {
 
