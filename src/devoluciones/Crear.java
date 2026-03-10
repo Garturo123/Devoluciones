@@ -139,13 +139,13 @@ public class Crear extends JPanel{
             System.out.println("Exisitosamente creado");
             Row encabezado = hoja.createRow(0);
             
-            encabezado.createCell(0).setCellValue("ID");
-            encabezado.createCell(1).setCellValue("Factura");
-            encabezado.createCell(2).setCellValue("Proveedor");
-            encabezado.createCell(3).setCellValue("Producto");
-            encabezado.createCell(4).setCellValue("Cantidad");
-            encabezado.createCell(5).setCellValue("Motivo");
-            encabezado.createCell(6).setCellValue("Fecha");
+       
+            encabezado.createCell(0).setCellValue("Factura");
+            encabezado.createCell(1).setCellValue("Proveedor");
+            encabezado.createCell(2).setCellValue("Producto");
+            encabezado.createCell(3).setCellValue("Cantidad");
+            encabezado.createCell(4).setCellValue("Motivo");
+            encabezado.createCell(5).setCellValue("Fecha");
 
         }else{
 
@@ -162,13 +162,12 @@ public class Crear extends JPanel{
         int nuevoID = obtenerIDDisponible(hoja);
 
         
-        fila.createCell(0).setCellValue(nuevoID);
-        fila.createCell(1).setCellValue(factura);
-        fila.createCell(2).setCellValue(proveedor);
-        fila.createCell(3).setCellValue(producto);
-        fila.createCell(4).setCellValue(cantidad);
-        fila.createCell(5).setCellValue(motivo);
-        fila.createCell(6).setCellValue(fecha);
+        fila.createCell(0).setCellValue(factura);
+        fila.createCell(1).setCellValue(proveedor);
+        fila.createCell(2).setCellValue(producto);
+        fila.createCell(3).setCellValue(cantidad);
+        fila.createCell(4).setCellValue(motivo);
+        fila.createCell(5).setCellValue(fecha);
 
         // guardar archivo
         FileOutputStream fos = new FileOutputStream(archivo);

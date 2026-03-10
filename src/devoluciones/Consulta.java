@@ -8,6 +8,10 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import javax.swing.table.DefaultTableModel;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -16,7 +20,7 @@ public class Consulta extends JPanel {
     private JTable tabla;
     File archivo = new File("devoluciones.xlsx");
     JTextField txtProveedor = new JTextField(15);
-    
+    Set<String> checksMarcados = new HashSet<>();
     
     public Consulta(JPanel panel) {
         setLayout(new BorderLayout());
@@ -45,133 +49,194 @@ public class Consulta extends JPanel {
         });
     }
 
-    public void cargarExcelEnTabla() {
-        
-        try {
-            Workbook workbook = new XSSFWorkbook(new FileInputStream(archivo));
-            Sheet sheet = workbook.getSheetAt(0);
-            DataFormatter formatter = new DataFormatter();
+   public void cargarExcelEnTabla() {
 
-            DefaultTableModel model = new DefaultTableModel();
+    // guardar checks actuales antes de refrescar
+    checksMarcados.clear();
 
-            Row headerRow = sheet.getRow(0);
-            for (Cell cell : headerRow) {
-                model.addColumn(formatter.formatCellValue(cell));
+    if(tabla.getModel().getRowCount() > 0){
+        for(int i = 0; i < tabla.getRowCount(); i++){
+
+            Boolean check = (Boolean) tabla.getValueAt(i,0);
+
+            if(check != null && check){
+                String id = tabla.getValueAt(i,2).toString();
+                checksMarcados.add(id);
             }
-
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                Row row = sheet.getRow(i);
-                if (row == null) continue;
-
-                Object[] fila = new Object[headerRow.getLastCellNum()];
-                for (int j = 0; j < fila.length; j++) {
-                    Cell cell = row.getCell(j);
-                    fila[j] = (cell == null) ? "" : formatter.formatCellValue(cell);
-                }
-                model.addRow(fila);
-            }
-            
-            tabla.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-            tabla.setModel(model);
-            workbook.close();
-
-        } catch (Exception e) {
-            e.printStackTrace();
         }
-    }
-   public void buscarProveedor(String proveedor) {
-
-        try {
-            Workbook workbook = new XSSFWorkbook(new FileInputStream(archivo));
-            Sheet sheet = workbook.getSheetAt(0);
-            DataFormatter formatter = new DataFormatter();
-
-            DefaultTableModel model = new DefaultTableModel();
-
-            Row header = sheet.getRow(0);
-
-            for (Cell cell : header) {
-                model.addColumn(formatter.formatCellValue(cell));
-            }
-
-            proveedor = proveedor.toLowerCase().trim();
-
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-
-                Row row = sheet.getRow(i);
-                if (row == null) continue;
-
-                String proveedorExcel = formatter.formatCellValue(row.getCell(2)).toLowerCase();
-
-                if (proveedorExcel.contains(proveedor)) {
-
-                    Object[] fila = new Object[header.getLastCellNum()];
-
-                    for (int j = 0; j < fila.length; j++) {
-                        fila[j] = formatter.formatCellValue(row.getCell(j));
-                    }
-
-                    model.addRow(fila);
-                }
-            }
-
-            tabla.setModel(model);
-            workbook.close();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-public void devolverProductos() {
-
-    int[] filas = tabla.getSelectedRows();
-
-    if (filas.length == 0) {
-        JOptionPane.showMessageDialog(this, "Seleccione productos");
-        return;
     }
 
     try {
-
-        FileInputStream fis = new FileInputStream("devoluciones.xlsx");
-        Workbook workbook = new XSSFWorkbook(fis);
+        Workbook workbook = new XSSFWorkbook(new FileInputStream(archivo));
         Sheet sheet = workbook.getSheetAt(0);
         DataFormatter formatter = new DataFormatter();
 
-        // recorrer las filas seleccionadas desde atrás
-        for (int f = filas.length - 1; f >= 0; f--) {
+        DefaultTableModel model = new DefaultTableModel(){
 
-            String idTabla = tabla.getValueAt(filas[f], 0).toString();
+            @Override
+            public Class<?> getColumnClass(int column) {
+                if(column == 0) return Boolean.class;
+                return String.class;
+            }
 
-            for (int i = sheet.getLastRowNum(); i >= 1; i--) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 0;
+            }
+        };
 
-                Row row = sheet.getRow(i);
-                if (row == null) continue;
+        model.addColumn("Devolver");
+        model.addColumn("FilaExcel");
 
-                String idExcel = formatter.formatCellValue(row.getCell(0));
+        Row headerRow = sheet.getRow(0);
 
-                if (idExcel.equals(idTabla)) {
+        for (Cell cell : headerRow) {
+            model.addColumn(formatter.formatCellValue(cell));
+        }
 
-                    sheet.removeRow(row);
+        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
 
-                    if (i < sheet.getLastRowNum()) {
-                        sheet.shiftRows(i + 1, sheet.getLastRowNum(), -1);
-                    }
+            Row row = sheet.getRow(i);
+            if (row == null) continue;
 
-                    break;
+            Object[] fila = new Object[headerRow.getLastCellNum() + 2];
+
+            String id = formatter.formatCellValue(row.getCell(0));
+
+            fila[0] = checksMarcados.contains(id); // restaurar check
+            fila[1] = i;
+
+            for(int j = 0; j < headerRow.getLastCellNum(); j++){
+                Cell cell = row.getCell(j);
+                fila[j+2] = formatter.formatCellValue(cell);
+            }
+
+            model.addRow(fila);
+        }
+
+        tabla.setModel(model);
+        tabla.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+
+        workbook.close();
+
+        // ocultar columna filaExcel completamente
+        tabla.removeColumn(tabla.getColumnModel().getColumn(1));
+        tabla.setAutoCreateRowSorter(true);
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+public void buscarProveedor(String proveedor) {
+
+    try {
+        Workbook workbook = new XSSFWorkbook(new FileInputStream(archivo));
+        Sheet sheet = workbook.getSheetAt(0);
+        DataFormatter formatter = new DataFormatter();
+
+        DefaultTableModel model = new DefaultTableModel(){
+
+            @Override
+            public Class<?> getColumnClass(int column) {
+                if(column == 0) return Boolean.class;
+                return String.class;
+            }
+
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 0;
+            }
+        };
+
+        model.addColumn("Devolver");
+        model.addColumn("FilaExcel");
+
+        Row header = sheet.getRow(0);
+
+        for (Cell cell : header) {
+            model.addColumn(formatter.formatCellValue(cell));
+        }
+
+        proveedor = proveedor.toLowerCase().trim();
+
+        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+
+            Row row = sheet.getRow(i);
+            if (row == null) continue;
+
+            String proveedorExcel = formatter.formatCellValue(row.getCell(2)).toLowerCase();
+
+            if (proveedorExcel.contains(proveedor)) {
+
+                Object[] fila = new Object[header.getLastCellNum() + 2];
+
+                fila[0] = false;
+                fila[1] = i;
+
+                for(int j = 0; j < header.getLastCellNum(); j++){
+                    Cell cell = row.getCell(j);
+                    fila[j+2] = formatter.formatCellValue(cell);
                 }
+
+                model.addRow(fila);
+            }
+        }
+
+        tabla.setModel(model);
+
+        workbook.close();
+
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+
+    tabla.getColumnModel().getColumn(1).setMinWidth(0);
+    tabla.getColumnModel().getColumn(1).setMaxWidth(0);
+    tabla.getColumnModel().getColumn(1).setWidth(0);
+}
+public void devolverProductos() {
+
+    try {
+
+        FileInputStream fis = new FileInputStream(archivo);
+        Workbook workbook = new XSSFWorkbook(fis);
+        Sheet sheet = workbook.getSheetAt(0);
+
+        ArrayList<Integer> filasExcel = new ArrayList<>();
+
+        for(int i = 0; i < tabla.getRowCount(); i++){
+
+            Boolean check = (Boolean) tabla.getValueAt(i,0);
+
+            if(check != null && check){
+
+                int filaExcel = (int) tabla.getModel().getValueAt(i,1);
+                filasExcel.add(filaExcel);
+            }
+        }
+
+        // eliminar desde atrás
+        Collections.sort(filasExcel, Collections.reverseOrder());
+
+        for(int fila : filasExcel){
+
+            Row row = sheet.getRow(fila);
+
+            if(row != null){
+                sheet.removeRow(row);
+            }
+
+            if(fila < sheet.getLastRowNum()){
+                sheet.shiftRows(fila+1, sheet.getLastRowNum(), -1);
             }
         }
 
         fis.close();
 
-        FileOutputStream fos = new FileOutputStream("devoluciones.xlsx");
+        FileOutputStream fos = new FileOutputStream(archivo);
         workbook.write(fos);
 
         fos.close();
         workbook.close();
-
-        JOptionPane.showMessageDialog(this, "Productos devueltos");
 
         cargarExcelEnTabla();
 
@@ -179,5 +244,4 @@ public void devolverProductos() {
         e.printStackTrace();
     }
 }
-  
 }
