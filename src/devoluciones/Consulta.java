@@ -115,6 +115,13 @@ public class Consulta extends JPanel {
         }
 
         tabla.setModel(model);
+        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        tabla.getColumnModel().getColumn(0).setPreferredWidth(50);  // checkbox
+        tabla.getColumnModel().getColumn(2).setPreferredWidth(80);  // ID
+        tabla.getColumnModel().getColumn(3).setPreferredWidth(150); // provedor
+        tabla.getColumnModel().getColumn(4).setPreferredWidth(250); // producto
+        tabla.getColumnModel().getColumn(5).setPreferredWidth(50); // cant
+        tabla.getColumnModel().getColumn(6).setPreferredWidth(200);
         tabla.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
         workbook.close();
@@ -182,7 +189,8 @@ public void buscarProveedor(String proveedor) {
         }
 
         tabla.setModel(model);
-
+        
+       
         workbook.close();
 
     } catch (Exception e) {
