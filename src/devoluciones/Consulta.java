@@ -1,6 +1,8 @@
 package devoluciones;
 
 import java.awt.BorderLayout;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.io.File;
 import javax.swing.*;
 import org.apache.poi.ss.usermodel.*;
@@ -14,6 +16,7 @@ import java.util.HashSet;
 import java.util.Set;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.table.TableColumn;
 
 public class Consulta extends JPanel {
 
@@ -115,13 +118,12 @@ public class Consulta extends JPanel {
         }
 
         tabla.setModel(model);
+        SwingUtilities.invokeLater(() -> {
+            ajustarColumnasPorcentaje(tabla, new double[]{
+                0.05, 0.10, 0.25, 0.25, 0.05, 0.15, 0.15
+            });
+        });
         tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        tabla.getColumnModel().getColumn(0).setPreferredWidth(50);  // checkbox
-        tabla.getColumnModel().getColumn(2).setPreferredWidth(80);  // ID
-        tabla.getColumnModel().getColumn(3).setPreferredWidth(150); // provedor
-        tabla.getColumnModel().getColumn(4).setPreferredWidth(250); // producto
-        tabla.getColumnModel().getColumn(5).setPreferredWidth(50); // cant
-        tabla.getColumnModel().getColumn(6).setPreferredWidth(200);
         tabla.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
         workbook.close();
@@ -250,6 +252,18 @@ public void devolverProductos() {
 
     } catch (Exception e) {
         e.printStackTrace();
+    }
+}
+private void ajustarColumnasPorcentaje(JTable tabla, double[] porcentajes) {
+
+    int anchoTabla = ((JViewport) tabla.getParent()).getWidth();
+    System.out.println("Columnas visibles: " + tabla.getColumnModel().getColumnCount());
+    for (int i = 0; i < tabla.getColumnModel().getColumnCount(); i++) {
+
+        TableColumn columna = tabla.getColumnModel().getColumn(i);
+
+        int ancho = (int) (anchoTabla * porcentajes[i]);
+        columna.setPreferredWidth(ancho);
     }
 }
 }
