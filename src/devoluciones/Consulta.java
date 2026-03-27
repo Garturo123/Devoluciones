@@ -1,8 +1,6 @@
 package devoluciones;
 
 import java.awt.BorderLayout;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.io.File;
 import javax.swing.*;
 import org.apache.poi.ss.usermodel.*;
@@ -120,7 +118,7 @@ public class Consulta extends JPanel {
         tabla.setModel(model);
         SwingUtilities.invokeLater(() -> {
             ajustarColumnasPorcentaje(tabla, new double[]{
-                0.05, 0.10, 0.25, 0.25, 0.05, 0.15, 0.15
+                0.05, 0.10, 0.10, 0.33, 0.02, 0.35, 0.05
             });
         });
         tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
@@ -191,17 +189,23 @@ public void buscarProveedor(String proveedor) {
         }
 
         tabla.setModel(model);
-        
-       
+        SwingUtilities.invokeLater(() -> {
+            ajustarColumnasPorcentaje(tabla, new double[]{
+                0.05, 0.10, 0.10, 0.33, 0.02, 0.35, 0.05
+            });
+        });
+        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        tabla.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+
         workbook.close();
 
+         tabla.removeColumn(tabla.getColumnModel().getColumn(1));
+     tabla.setAutoCreateRowSorter(true);
     } catch (Exception e) {
         e.printStackTrace();
     }
 
-    tabla.getColumnModel().getColumn(1).setMinWidth(0);
-    tabla.getColumnModel().getColumn(1).setMaxWidth(0);
-    tabla.getColumnModel().getColumn(1).setWidth(0);
+    
 }
 public void devolverProductos() {
 
@@ -258,6 +262,10 @@ private void ajustarColumnasPorcentaje(JTable tabla, double[] porcentajes) {
 
     int anchoTabla = ((JViewport) tabla.getParent()).getWidth();
     System.out.println("Columnas visibles: " + tabla.getColumnModel().getColumnCount());
+    if(tabla.getColumnModel().getColumnCount() > 7){
+        tabla.removeColumn(tabla.getColumnModel().getColumn(7));
+     tabla.setAutoCreateRowSorter(true);
+    }
     for (int i = 0; i < tabla.getColumnModel().getColumnCount(); i++) {
 
         TableColumn columna = tabla.getColumnModel().getColumn(i);
